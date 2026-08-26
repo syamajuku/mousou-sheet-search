@@ -201,6 +201,23 @@
     font-variant-numeric: tabular-nums;
   }
 
+  .results-header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 4px 16px;
+    padding: 0 16px;
+    margin-bottom: 6px;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--ink-muted);
+    text-transform: uppercase;
+  }
+
+  .results-header .col-address {
+    justify-self: end;
+  }
+
   ul.results {
     list-style: none;
     margin: 0;
@@ -354,6 +371,11 @@
     <span id="totalLabel">全 0 件</span>
   </div>
 
+  <div class="results-header" id="resultsHeader">
+    <span class="col-title">タイトル</span>
+    <span class="col-address">アドレス</span>
+  </div>
+
   <ul class="results" id="resultsList"></ul>
 
   <div class="empty-state" id="emptyState" style="display:none;">
@@ -381,6 +403,7 @@
 
   const searchInput = document.getElementById('searchInput');
   const resultsList = document.getElementById('resultsList');
+  const resultsHeader = document.getElementById('resultsHeader');
   const emptyState = document.getElementById('emptyState');
   const emptyMessage = document.getElementById('emptyMessage');
   const resultCount = document.getElementById('resultCount');
@@ -435,6 +458,7 @@
     totalLabel.textContent = `全 ${DATA.length} 件`;
 
     if (DATA.length === 0) {
+      resultsHeader.style.display = 'none';
       resultsList.style.display = 'none';
       emptyState.style.display = 'block';
       emptyMessage.textContent = 'まだデータが登録されていません。';
@@ -442,12 +466,14 @@
     }
 
     if (filtered.length === 0) {
+      resultsHeader.style.display = 'none';
       resultsList.style.display = 'none';
       emptyState.style.display = 'block';
       emptyMessage.textContent = `「${query}」に一致する結果がありません。`;
       return;
     }
 
+    resultsHeader.style.display = 'grid';
     resultsList.style.display = 'flex';
     emptyState.style.display = 'none';
 
