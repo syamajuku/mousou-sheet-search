@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>妄想シート検索</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FAF8F3;
+    --surface: #F2EEE4;
+    --surface-hover: #EAE4D4;
+    --border: #E4DFD3;
+    --ink: #2B2823;
+    --ink-muted: #7A7266;
+    --accent: #B8622E;
+    --accent-soft: #F0DCC8;
+    --focus-ring: #B8622E;
+    --danger: #B3402E;
+    --danger-soft: #F3DCD6;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1C1A16;
+      --surface: #242019;
+      --surface-hover: #2C2720;
+      --border: #3A352A;
+      --ink: #EDE8DC;
+      --ink-muted: #9C9284;
+      --accent: #D98A54;
+      --accent-soft: #3D2B1C;
+      --focus-ring: #D98A54;
+      --danger: #E08A76;
+      --danger-soft: #3D241E;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #1C1A16;
+    --surface: #242019;
+    --surface-hover: #2C2720;
+    --border: #3A352A;
+    --ink: #EDE8DC;
+    --ink-muted: #9C9284;
+    --accent: #D98A54;
+    --accent-soft: #3D2B1C;
+    --focus-ring: #D98A54;
+    --danger: #E08A76;
+    --danger-soft: #3D241E;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Zen Kaku Gothic New", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 48px 20px 80px;
+  }
+
+  main {
+    width: 100%;
+    max-width: 720px;
+  }
+
+  .top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .eyebrow {
+    font-size: 13px;
+    letter-spacing: 0.12em;
+    color: var(--accent);
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  h1 {
+    font-size: clamp(24px, 4vw, 32px);
+    font-weight: 700;
+    margin: 0 0 6px;
+    text-wrap: balance;
+    letter-spacing: 0.01em;
+  }
+
+  .subtitle {
+    color: var(--ink-muted);
+    font-size: 14.5px;
+    margin: 0 0 32px;
+    line-height: 1.6;
+  }
+
+  .refresh-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 14px;
+    font-size: 13.5px;
+    font-family: inherit;
+    font-weight: 600;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.12s ease, border-color 0.12s ease;
+  }
+
+  .refresh-btn:hover {
+    background: var(--surface-hover);
+    border-color: var(--accent);
+  }
+
+  .refresh-btn:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+
+  .refresh-btn svg {
+    width: 14px;
+    height: 14px;
+    transition: transform 0.5s ease;
+  }
+
+  .refresh-btn.loading svg {
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  .search-box {
+    position: relative;
+    margin-bottom: 8px;
+  }
+
+  .search-box svg {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 18px;
+    height: 18px;
+    color: var(--ink-muted);
+    pointer-events: none;
+  }
+
+  input[type="text"] {
+    width: 100%;
+    padding: 14px 16px 14px 46px;
+    font-size: 16px;
+    font-family: inherit;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  input[type="text"]::placeholder {
+    color: var(--ink-muted);
+  }
+
+  input[type="text"]:focus {
+    border-color: var(--focus-ring);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+
+  .meta-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 13px;
+    color: var(--ink-muted);
+    margin: 16px 2px 14px;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+  }
+
+  .meta-row .count strong {
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+
+  ul.results {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  li.row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 4px 16px;
+    align-items: center;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    transition: background 0.12s ease, border-color 0.12s ease;
+  }
+
+  li.row:hover {
+    background: var(--surface-hover);
+  }
+
+  .title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ink);
+    overflow-wrap: anywhere;
+  }
+
+  .title mark {
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-radius: 3px;
+    padding: 0 2px;
+  }
+
+  .address {
+    font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12.5px;
+    color: var(--ink-muted);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 3px 9px;
+    white-space: nowrap;
+    justify-self: end;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 64px 24px;
+    border: 1px dashed var(--border);
+    border-radius: 12px;
+    color: var(--ink-muted);
+  }
+
+  .empty-state .icon {
+    font-size: 28px;
+    margin-bottom: 12px;
+    opacity: 0.6;
+  }
+
+  .empty-state p {
+    margin: 0 0 4px;
+    font-size: 14.5px;
+    line-height: 1.7;
+  }
+
+  .empty-state .small {
+    font-size: 12.5px;
+    opacity: 0.85;
+  }
+
+  .error-banner {
+    display: none;
+    align-items: flex-start;
+    gap: 10px;
+    background: var(--danger-soft);
+    color: var(--danger);
+    border: 1px solid var(--danger);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 13px;
+    line-height: 1.6;
+    margin-bottom: 16px;
+  }
+
+  .error-banner.visible {
+    display: flex;
+  }
+
+  .error-banner svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  footer {
+    margin-top: 40px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--ink-muted);
+    line-height: 1.8;
+  }
+
+  footer a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  footer a:hover {
+    text-decoration: underline;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<main>
+  <div class="top-row">
+    <div>
+      <div class="eyebrow">SYCL &middot; 下北妄想会議</div>
+      <h1>妄想シート検索</h1>
+    </div>
+    <button class="refresh-btn" id="refreshBtn" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+      <span id="refreshLabel">更新</span>
+    </button>
+  </div>
+  <p class="subtitle">タイトルまたはアドレスでファイリング場所を検索します。</p>
+
+  <div class="error-banner" id="errorBanner">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+    <span id="errorMessage"></span>
+  </div>
+
+  <div class="search-box">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+    <input type="text" id="searchInput" placeholder="タイトルで検索…" autocomplete="off">
+  </div>
+
+  <div class="meta-row">
+    <span class="count"><strong id="resultCount">0</strong> 件表示</span>
+    <span id="totalLabel">全 0 件</span>
+  </div>
+
+  <ul class="results" id="resultsList"></ul>
+
+  <div class="empty-state" id="emptyState" style="display:none;">
+    <div class="icon">📭</div>
+    <p id="emptyMessage">まだデータが登録されていません。</p>
+    <p class="small">スプレッドシートにタイトルとアドレスを追加し、「更新」を押すと反映されます。</p>
+  </div>
+
+  <footer>
+    データ元: <a href="https://docs.google.com/spreadsheets/d/1qv2vJGtrtp0i0YgJENtsQn8wQKQIDfuntskF86sW51o/edit" target="_blank" rel="noopener">妄想シート ファイリング台帳</a><br>
+    <span id="updatedLabel">読み込み中…</span>
+  </footer>
+</main>
+
+<script>
+  // スプレッドシートと連携している Google Apps Script のウェブアプリ URL
+  const API_URL = 'https://script.google.com/macros/s/AKfycbwN9qQuwHuUUbJghnv0zH4OmudSS-bDVY-r_VzSlaa6qm4J5fAT9GxEKmJaf02Ra0kBJQ/exec';
+
+  // ページを開いた直後や API 取得に失敗した際に表示する初期データ
+  let DATA = [
+    { title: "古着ンピック", address: "2025-01-001" },
+    { title: "COOKMATE", address: "2025-01-002" },
+    { title: "下北運動会", address: "2025-02-001" },
+  ];
+
+  const searchInput = document.getElementById('searchInput');
+  const resultsList = document.getElementById('resultsList');
+  const emptyState = document.getElementById('emptyState');
+  const emptyMessage = document.getElementById('emptyMessage');
+  const resultCount = document.getElementById('resultCount');
+  const totalLabel = document.getElementById('totalLabel');
+  const updatedLabel = document.getElementById('updatedLabel');
+  const refreshBtn = document.getElementById('refreshBtn');
+  const refreshLabel = document.getElementById('refreshLabel');
+  const errorBanner = document.getElementById('errorBanner');
+  const errorMessage = document.getElementById('errorMessage');
+
+  function escapeHtml(str) {
+    return str.replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+  }
+
+  function highlight(text, query) {
+    if (!query) return escapeHtml(text);
+    const escaped = escapeHtml(text);
+    const escapedQuery = escapeHtml(query).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return escaped.replace(new RegExp(`(${escapedQuery})`, 'ig'), '<mark>$1</mark>');
+  }
+
+  function formatTimestamp(iso) {
+    try {
+      const d = new Date(iso);
+      return d.toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+    } catch (e) {
+      return iso;
+    }
+  }
+
+  function showError(msg) {
+    errorMessage.textContent = msg;
+    errorBanner.classList.add('visible');
+  }
+
+  function hideError() {
+    errorBanner.classList.remove('visible');
+  }
+
+  function render() {
+    const query = searchInput.value.trim();
+    const filtered = query
+      ? DATA.filter(d =>
+          d.title.toLowerCase().includes(query.toLowerCase()) ||
+          d.address.toLowerCase().includes(query.toLowerCase())
+        )
+      : DATA;
+
+    resultCount.textContent = filtered.length;
+    totalLabel.textContent = `全 ${DATA.length} 件`;
+
+    if (DATA.length === 0) {
+      resultsList.style.display = 'none';
+      emptyState.style.display = 'block';
+      emptyMessage.textContent = 'まだデータが登録されていません。';
+      return;
+    }
+
+    if (filtered.length === 0) {
+      resultsList.style.display = 'none';
+      emptyState.style.display = 'block';
+      emptyMessage.textContent = `「${query}」に一致する結果がありません。`;
+      return;
+    }
+
+    resultsList.style.display = 'flex';
+    emptyState.style.display = 'none';
+
+    resultsList.innerHTML = filtered.map(d => `
+      <li class="row">
+        <span class="title">${highlight(d.title, query)}</span>
+        <span class="address">${escapeHtml(d.address)}</span>
+      </li>
+    `).join('');
+  }
+
+  async function fetchLatest(isManual) {
+    refreshBtn.disabled = true;
+    refreshBtn.classList.add('loading');
+    refreshLabel.textContent = '更新中…';
+    hideError();
+
+    try {
+      const res = await fetch(API_URL, { cache: 'no-store' });
+      if (!res.ok) throw new Error(`サーバーエラー (HTTP ${res.status})`);
+      const json = await res.json();
+      if (!Array.isArray(json.items)) throw new Error('データ形式が想定と異なります');
+
+      DATA = json.items.map(item => ({
+        title: String(item.title || ''),
+        address: String(item.address || '')
+      }));
+
+      updatedLabel.textContent = `最終更新: ${formatTimestamp(json.updatedAt)}`;
+      render();
+    } catch (err) {
+      showError(
+        (isManual ? '更新に失敗しました: ' : '自動読み込みに失敗しました: ') +
+        err.message +
+        '（前回取得したデータを表示しています）'
+      );
+    } finally {
+      refreshBtn.disabled = false;
+      refreshBtn.classList.remove('loading');
+      refreshLabel.textContent = '更新';
+    }
+  }
+
+  searchInput.addEventListener('input', render);
+  refreshBtn.addEventListener('click', () => fetchLatest(true));
+
+  render();
+  fetchLatest(false);
+</script>
+
+</body>
+</html>
